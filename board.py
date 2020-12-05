@@ -1,67 +1,117 @@
-import numpy
+import copy
+
 from player_colors import Colors
 from stones import Goishi
 
 
 class Goban:
     def __init__(self, size, komi):
-        self.map = numpy.zeros((size, size))
+        self.size = size
+        self.map = []
+        for i in range(size):
+            self.map.append([])
+            for j in range(size):
+                self.map[i].append(0)
         self.komi = komi
+        self.checks = set()
         self.shifts_to_neighbors = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-        self.ko_rule = set()
+        self.ko_rule = None
 
     def get_field(self, first, second):
-        return self.map[19 - second, first]
+        try:
+            return self.map[self.size - second][first - 1]
+        except IndexError:
+            return None
 
     def set_field(self, first, second, stone):
         if stone:
-            self.map[19 - second, first] = stone
+            self.map[self.size - second][first - 1] = stone
         else:
-            self.map[19 - second, first] = 0
+            self.map[self.size - second][first - 1] = 0
 
     def make_move(self, x, y, color):
         if not self.get_field(x, y):
-            self.set_field(x, y, Goishi(color))
 
-            self.is_enemy_eye = True
-            self.checks = set()
+            res = True
+            self.set_field(x, y, Goishi(x, y, color))
             for i, j in self.shifts_to_neighbors:
-                if self.get_field(x + i, y + j).color != color:
-                    self.is_enemy_eye &= \
-                        not self.check_for_take(x + i, y + j, Colors(-color))
-                else:
-                    self.is_enemy_eye = False
-
-            if self.is_enemy_eye:
+                if self.get_field(x + i, y + j) \
+                        and self.get_field(x + i, y + j).color != color:
+                    self.try_take(x + i, y + j, Colors(-color))
+            if self.check_for_take(x, y, color):
+                res = False
                 self.set_field(x, y, None)
-                return False
+            self.leave()
 
-            return True
+            return res
         else:
             return False
 
+    def try_take(self, x, y, color):
+        if self.check_for_take(x, y, color):
+            self.take()
+            return True
+        else:
+            self.leave()
+            return False
+
     def check_for_take(self, x, y, color):
-        if 0 < x < self.map.size + 1 and 0 < y < self.map.size + 1:
+        if 0 < x <= self.size and 0 < y <= self.size:
             field = self.get_field(x, y)
             if field:
                 if field.color == color:
                     self.checks.add(field)
-                    is_surrounded = True
+                    field.is_surrounded = True
                     for i, j in self.shifts_to_neighbors:
                         if self.get_field(x + i, y + j) not in self.checks:
-                            is_surrounded &= \
+                            field.is_surrounded &= \
                                 self.check_for_take(x + i, y + j, color)
-                    return is_surrounded
+                    return field.is_surrounded
                 else:
                     return True
             else:
                 return False
+        else:
+            return True
 
-    def is_there_move(self):
-        pass
+    def take(self):
+        for row in self.map:
+            for field in row:
+                if field and field.is_surrounded:
+                    self.set_field(field.x, field.y, None)
+        self.checks = set()
+
+    def leave(self):
+        for row in self.map:
+            for field in row:
+                if field:
+                    field.is_surrounded = False
+        self.checks = set()
 
     def score(self):
+        self.continuation_of_game = copy.deepcopy(self.map)
+        empty = set([(x, y) for y in range(1, self.size + 1)
+                     for x in range(1, self.size + 1) if self.get_field(x, y)])
+        for x, y in empty:
+            pass
+
+    def finish_move(self):
         pass
 
     def get_map(self):
-        pass
+        res = ''
+        for y in range(self.size):
+            res += str(self.size - y) + ' '
+            for x in range(self.size):
+                field = self.map[y][x]
+                if field:
+                    res += field.image
+                else:
+                    res += '+'
+                    #res += '✛'
+            res += '\n'
+        res += '  '
+        for i in range(self.size):
+            res += str(i + 1)
+        res += '\n'
+        return res
