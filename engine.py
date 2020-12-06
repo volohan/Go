@@ -1,9 +1,10 @@
 from board import Goban
 from player_colors import Colors
 from opponent import GoOpponentAI
+from sys import exit
 
 __author__ = 'Nikolai V.'
-__version__ = '0.2 Pre-Alpha'
+__version__ = '0.2.1 Pre-Alpha'
 
 
 class GoEngine:
@@ -23,6 +24,7 @@ class GoEngine:
         self.salutation()
 
         self.is_end = False
+        self.player_pass = False
         self.main_loop()
 
     def main_loop(self):
@@ -30,25 +32,32 @@ class GoEngine:
             print(' ')
             print(self.board.get_map())
             print('----------------------------------------------------------')
+
             if self.next_move == self.player_color:
                 move = self.demand_move()
             else:
                 move = self.opponent.move()
 
-            if self.is_end:
-                break
+            if move:
+                is_success = self.board.make_move(move[0], move[1], self.next_move)
 
-            is_success = self.board.make_move(move[0], move[1], self.next_move)
+                if not is_success:
+                    self.illegal_move()
+                    continue
 
-            if not is_success:
-                self.illegal_move()
-                continue
+                self.player_pass = False
+            else:
+                if self.player_pass:
+                    break
+                else:
+                    self.player_pass = True
 
             if self.two_players:
                 self.player_color = Colors(-self.next_move)
             self.next_move = Colors(-self.next_move)
-        white_score, black_score = self.board.score()
-        if white_score > black_score:
+
+        scores = self.board.score()
+        if scores[Colors.white] > scores[Colors.black]:
             self.announce_winner(Colors.white)
         else:
             self.announce_winner(Colors.black)
@@ -69,33 +78,53 @@ class GoEngine:
               f'\n.\n.\n.\n.\n.\n.\n'
               f'{Colors(-winner).name}: (╮°-°)╮┳━━┳ ( ╯°□°)╯ ┻━━┻')
 
+    def print_help(self):
+        print('----------------------------------------------------\n'
+              '"* *" (где * число 1-19) - координата поля по '
+              'горизонтали (с лева на право) и по вертикали (снизу '
+              'вверх)\n\n'
+              '"rules" - правила игры\n\n'
+              '"map" - показать доску игры\n\n'
+              '"help" - этот текст\n\n'
+              '"exit" - выход\n'
+              '----------------------------------------------------\n')
+
+    def print_default(self):
+        print('Странный ты человек, конечно.\nЯ хочу от тебя ход, '
+              'а ты пишешь мне такое...\n--------(Use "help")--------')
+
+    def print_rules(self):
+        print("Sorry, it's not working yet")
+
+    def print_map(self):
+        print(self.board.get_map())
+
     def demand_move(self):
         while True:
-            player_response = input()
             try:
-                coordinate = [int(i) for i in player_response.split(' ')]
-                if len(coordinate) == 2 and 0 < coordinate[0] < 20 \
-                        and 0 < coordinate[1] < 20:
-                    return coordinate
-            except ValueError:
-                pass
-            if player_response == 'map':
-                print(self.board.get_map())
-            elif player_response == 'help':
-                print('----------------------------------------------------\n'
-                      '"* *" (где * число 1-19) - координата поля по '
-                      'горизонтали (с лева на право) и по вертикали (снизу '
-                      'вверх)\n\n'
-                      '"rules" - правила игры\n\n'
-                      '"map" - показать доску игры\n\n'
-                      '"help" - этот текст\n'
-                      '----------------------------------------------------\n')
-            elif player_response == 'pass':
-                self.is_end = True
-                return [0, 0]
-            else:
-                print('Странный ты человек, конечно.\nЯ хочу от тебя ход, '
-                      'а ты пишешь мне такое...\n--------(Use "help")--------')
+                player_response = input()
+                try:
+                    coordinate = [int(i) for i in player_response.split(' ')]
+                    if len(coordinate) == 2 \
+                            and 0 < coordinate[0] <= self.board.size \
+                            and 0 < coordinate[1] <= self.board.size:
+                        return coordinate
+                except ValueError:
+                    pass
+                if player_response == 'map':
+                    self.print_map()
+                elif player_response == 'rules':
+                    self.print_rules()
+                elif player_response == 'help':
+                    self.print_help()
+                elif player_response == 'pass':
+                    return None
+                elif player_response == 'exit':
+                    exit(0)
+                else:
+                    self.print_default()
+            except EOFError:
+                self.print_default()
 
 
 if __name__ == '__main__':

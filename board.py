@@ -1,5 +1,3 @@
-import copy
-
 from player_colors import Colors
 from stones import Goishi
 
@@ -8,6 +6,7 @@ class Goban:
     def __init__(self, size, komi):
         self.size = size
         self.map = []
+        self.scores = {Colors.white: 0, Colors.black: 0}
         for i in range(size):
             self.map.append([])
             for j in range(size):
@@ -31,9 +30,8 @@ class Goban:
 
     def make_move(self, x, y, color):
         if not self.get_field(x, y):
-
-            res = True
             self.set_field(x, y, Goishi(x, y, color))
+            res = True
             for i, j in self.shifts_to_neighbors:
                 if self.get_field(x + i, y + j) \
                         and self.get_field(x + i, y + j).color != color:
@@ -78,6 +76,7 @@ class Goban:
         for row in self.map:
             for field in row:
                 if field and field.is_surrounded:
+                    self.scores[field.color] += 1
                     self.set_field(field.x, field.y, None)
         self.checks = set()
 
@@ -89,14 +88,7 @@ class Goban:
         self.checks = set()
 
     def score(self):
-        self.continuation_of_game = copy.deepcopy(self.map)
-        empty = set([(x, y) for y in range(1, self.size + 1)
-                     for x in range(1, self.size + 1) if self.get_field(x, y)])
-        for x, y in empty:
-            pass
-
-    def finish_move(self):
-        pass
+        return self.scores
 
     def get_map(self):
         res = ''
