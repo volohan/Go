@@ -4,7 +4,7 @@ from opponent import GoOpponentAI
 from sys import exit
 
 __author__ = 'Nikolai V.'
-__version__ = '0.2.1 Pre-Alpha'
+__version__ = '0.3 Alpha'
 
 
 class GoEngine:
@@ -29,7 +29,6 @@ class GoEngine:
 
     def main_loop(self):
         while not self.is_end:
-            print(' ')
             print(self.board.get_map())
             print('----------------------------------------------------------')
 
@@ -56,11 +55,11 @@ class GoEngine:
                 self.player_color = Colors(-self.next_move)
             self.next_move = Colors(-self.next_move)
 
-        scores = self.board.score()
-        if scores[Colors.white] > scores[Colors.black]:
-            self.announce_winner(Colors.white)
-        else:
+        scores = self.board.score(True)
+        if scores[Colors.black] > scores[Colors.white]:
             self.announce_winner(Colors.black)
+        else:
+            self.announce_winner(Colors.white)
 
     def illegal_move(self):
         print('!!!!Невозможный  ход!!!!\n'
@@ -99,10 +98,16 @@ class GoEngine:
     def print_map(self):
         print(self.board.get_map())
 
+    def print_score(self):
+        score = self.board.score(False)
+        print(f'Black: {score[Colors.black]}\n'
+              f'White: {score[Colors.white] + self.board.komi}')
+
     def demand_move(self):
         while True:
             try:
                 player_response = input()
+                print(' ')
                 try:
                     coordinate = [int(i) for i in player_response.split(' ')]
                     if len(coordinate) == 2 \
@@ -113,6 +118,8 @@ class GoEngine:
                     pass
                 if player_response == 'map':
                     self.print_map()
+                elif player_response == 'score':
+                    self.print_score()
                 elif player_response == 'rules':
                     self.print_rules()
                 elif player_response == 'help':

@@ -6,6 +6,7 @@ from stones import Goishi
 class Goban:
     def __init__(self, size, komi):
         self.size = size
+        self.depth_of_analysis = 8
         self.map = []
         self.scores = {Colors.white: 0, Colors.black: 0}
         for i in range(size):
@@ -14,13 +15,16 @@ class Goban:
                 self.map[i].append(0)
         self.komi = komi
         self.checks = set()
+        self.boundary = set()
         self.shifts_to_neighbors = [(-1, 0), (0, 1), (1, 0), (0, -1)]
         self.ko_rule = None
 
-    def get_field(self, first, second):
-        try:
-            return self.map[self.size - second][first - 1]
-        except IndexError:
+    def get_field(self, x, y):
+        first = self.size - y
+        second = x - 1
+        if 0 <= first < self.size and 0 <= second < self.size:
+            return self.map[first][second]
+        else:
             return None
 
     def set_field(self, first, second, stone):
@@ -77,7 +81,7 @@ class Goban:
         for row in self.map:
             for field in row:
                 if field and field.is_surrounded:
-                    self.scores[field.color] += 1
+                    self.scores[Colors(-field.color)] += 1
                     self.set_field(field.x, field.y, None)
         self.checks = set()
 
@@ -97,7 +101,6 @@ class Goban:
                 except AttributeError:
                     color = None
                 self.checks.add((x, y, color))
-                self.visited.add((x, y))
                 for i, j in self.shifts_to_neighbors:
                     field = self.get_field(x + i, y + j)
                     try:
@@ -106,29 +109,39 @@ class Goban:
                         color = None
                     if (x + i, y + j, color) not in self.checks:
                         self.find_territory(x + i, y + j, ignore_color)
+            else:
+                self.boundary.add(field.color)
 
-    def try_to_play_to_capture(self, deep, color, moves):
-        if deep < 5:
+    def try_to_play_to_capture(self, depth, color, moves):
+        if depth < self.depth_of_analysis:
             res = True
-            if color != self.attack_color:
-                res &= self.try_to_play_to_capture(deep + 1, Colors(-color),
+            if color != self.attack_color and len(moves) != 0:
+                res &= self.try_to_play_to_capture(depth + 1, Colors(-color),
                                                    copy.deepcopy(moves))
             bad_moves = 0
-            for x, y in copy.deepcopy(moves).pop():
+            for x, y in moves:
+                if not res:
+                    break
+
                 map = copy.deepcopy(self.map)
                 scores = copy.deepcopy(self.scores)
 
                 if self.make_move(x, y, color):
-                    res &= self.try_to_play_to_capture(deep + 1,
+                    next_moves = copy.deepcopy(moves)
+                    next_moves.discard((x, y))
+                    res &= self.try_to_play_to_capture(depth + 1,
                                                        Colors(-color),
-                                                       copy.deepcopy(moves))
+                                                       next_moves)
                 else:
                     bad_moves += 1
 
                 self.map = map
                 self.scores = scores
-            if bad_moves == len(moves):
-                return False
+            if bad_moves == len(moves) and bad_moves != 0:
+                if color == self.attack_color:
+                    return False
+                else:
+                    return True
             else:
                 return res
         else:
@@ -140,29 +153,55 @@ class Goban:
         if len(self.checks) < self.size * self.size / 2:
             original_position = copy.deepcopy(self.checks)
             possibility_moves = set()
-            for x, y, color in self.checks:
+            for x, y, color in original_position:
                 if not color:
                     possibility_moves.add((x, y))
             if len(original_position) != len(possibility_moves):
                 self.attack_color = attack_color
-                self.try_to_play_to_capture(0, attack_color,
-                                            possibility_moves)
+                if self.try_to_play_to_capture(0, attack_color, possibility_moves):
+                    for x, y, _ in [i for i in original_position
+                                    if (i[0], i[1]) not in possibility_moves]:
+                        self.set_field(x, y, None)
+                        self.visited.add((x, y, None))
+                        self.scores[attack_color] += 1
 
     def take_dead_stones(self):
         self.visited = set()
-        for y in range(self.size):
-            for x in range(self.size):
-                if (x, y) not in self.visited and not self.get_field(x, y):
+        for y in range(1, self.size + 1):
+            for x in range(1, self.size + 1):
+                if (x, y, None) not in self.visited and not self.get_field(x, y):
+                    self.find_territory(x, y, None)
+                    self.visited |= self.checks
                     self.find_and_finish_playing_conflict_zones(x, y,
                                                                 Colors.white)
                     self.find_and_finish_playing_conflict_zones(x, y,
                                                                 Colors.black)
 
     def to_tile_neutral_field(self):
-        pass
+        self.visited = set()
+        for y in range(1, self.size + 1):
+            for x in range(1, self.size + 1):
+                if (x, y) not in self.visited and not self.get_field(x, y):
+                    self.checks = set()
+                    self.boundary = set()
+                    self.find_territory(x, y, None)
+                    if len(self.boundary) == 2:
+                        for field in self.checks:
+                            self.set_field(field[0], field[1],
+                                           Goishi(field[0], field[1],
+                                                  Colors.black))
 
     def add_captured_territory(self):
-        pass
+        self.visited = set()
+        for y in range(1, self.size + 1):
+            for x in range(1, self.size + 1):
+                if (x, y, None) not in self.visited and not self.get_field(x, y):
+                    self.checks = set()
+                    self.boundary = set()
+                    self.find_territory(x, y, None)
+                    self.visited |= self.checks
+                    if len(self.checks) < self.size * self.size / 2:
+                        self.scores[self.boundary.pop()] += len(self.checks)
 
     def score(self, game_is_end):
         if game_is_end:
@@ -181,7 +220,6 @@ class Goban:
                     res += field.image
                 else:
                     res += '+'
-                    # res += '✛'
             res += '\n'
         res += '  '
         for i in range(self.size):

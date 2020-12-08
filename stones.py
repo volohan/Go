@@ -7,7 +7,7 @@ class Goishi:
         self.y = y
         self.color = color
         if color == Colors.white:
-            self.image = '●'
+            self.image = 'w'
         else:
-            self.image = '○'
+            self.image = 'b'
         self.is_surrounded = False
