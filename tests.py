@@ -194,9 +194,39 @@ class MyTestCase(unittest.TestCase):
         self.board.make_move(9, 6, Colors.white)
         self.board.make_move(9, 8, Colors.black)
 
-        print(self.board.get_map())
         self.assertEqual(self.board.score(True),
                          {Colors.white: 31, Colors.black: 17})
+
+    def test_ko_rule(self):
+        expected = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, Colors.black, Colors.white, 0, 0, 0, 0, 0, 0],
+                    [Colors.black, Colors.white, 0, Colors.white, 0, 0, 0, 0,
+                     0],
+                    [0, Colors.black, Colors.white, 0, 0, 0, 0, 0, 0]]
+
+        self.board.make_move(1, 2, Colors.black)
+        self.board.make_move(2, 1, Colors.black)
+        self.board.make_move(2, 3, Colors.black)
+        self.board.make_move(3, 2, Colors.black)
+
+        self.board.make_move(3, 1, Colors.white)
+        self.board.make_move(3, 3, Colors.white)
+        self.board.make_move(4, 2, Colors.white)
+
+        self.board.make_move(2, 2, Colors.white)
+
+        self.board.make_move(3, 2, Colors.black)
+
+        res = True
+        for x in range(self.board.size):
+            for y in range(self.board.size):
+                if self.board.map[x][y] != expected[x][y] \
+                        and self.board.map[x][y].color != expected[x][y]:
+                    res = False
+
+        self.assertTrue(res)
 
 
 if __name__ == '__main__':

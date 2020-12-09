@@ -14,10 +14,10 @@ class Goban:
             for j in range(size):
                 self.map[i].append(0)
         self.komi = komi
+        self.old_map = copy.deepcopy(self.map)
         self.checks = set()
         self.boundary = set()
         self.shifts_to_neighbors = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-        self.ko_rule = None
 
     def get_field(self, x, y):
         first = self.size - y
@@ -33,8 +33,21 @@ class Goban:
         else:
             self.map[self.size - second][first - 1] = 0
 
+    def check_ko_rule(self, map):
+        for y in range(self.size):
+            for x in range(self.size):
+                try:
+                    if self.map[y][x] != map[y][x] \
+                            and self.map[y][x].color != map[y][x].color:
+                        return False
+                except AttributeError:
+                    return False
+        return True
+
     def make_move(self, x, y, color):
         if not self.get_field(x, y):
+            older_map = self.old_map
+            self.old_map = copy.deepcopy(self.map)
             self.set_field(x, y, Goishi(x, y, color))
             res = True
             for i, j in self.shifts_to_neighbors:
@@ -44,6 +57,10 @@ class Goban:
             if self.check_for_take(x, y, color):
                 res = False
                 self.set_field(x, y, None)
+            elif self.check_ko_rule(older_map):
+                res = False
+                self.map = self.old_map
+                self.old_map = older_map
             self.leave()
 
             return res
@@ -158,7 +175,8 @@ class Goban:
                     possibility_moves.add((x, y))
             if len(original_position) != len(possibility_moves):
                 self.attack_color = attack_color
-                if self.try_to_play_to_capture(0, attack_color, possibility_moves):
+                if self.try_to_play_to_capture(0, attack_color,
+                                               possibility_moves):
                     for x, y, _ in [i for i in original_position
                                     if (i[0], i[1]) not in possibility_moves]:
                         self.set_field(x, y, None)
@@ -169,7 +187,8 @@ class Goban:
         self.visited = set()
         for y in range(1, self.size + 1):
             for x in range(1, self.size + 1):
-                if (x, y, None) not in self.visited and not self.get_field(x, y):
+                if (x, y, None) not in self.visited \
+                        and not self.get_field(x, y):
                     self.find_territory(x, y, None)
                     self.visited |= self.checks
                     self.find_and_finish_playing_conflict_zones(x, y,
@@ -195,7 +214,8 @@ class Goban:
         self.visited = set()
         for y in range(1, self.size + 1):
             for x in range(1, self.size + 1):
-                if (x, y, None) not in self.visited and not self.get_field(x, y):
+                if (x, y, None) not in self.visited \
+                        and not self.get_field(x, y):
                     self.checks = set()
                     self.boundary = set()
                     self.find_territory(x, y, None)

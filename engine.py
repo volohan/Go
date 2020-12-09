@@ -4,7 +4,7 @@ from opponent import GoOpponentAI
 from sys import exit
 
 __author__ = 'Nikolai V.'
-__version__ = '0.3 Alpha'
+__version__ = '0.4 Beta'
 
 
 class GoEngine:
@@ -56,6 +56,7 @@ class GoEngine:
             self.next_move = Colors(-self.next_move)
 
         scores = self.board.score(True)
+        self.print_score()
         if scores[Colors.black] > scores[Colors.white]:
             self.announce_winner(Colors.black)
         else:
@@ -89,11 +90,18 @@ class GoEngine:
               '----------------------------------------------------\n')
 
     def print_default(self):
-        print('Странный ты человек, конечно.\nЯ хочу от тебя ход, '
-              'а ты пишешь мне такое...\n--------(Use "help")--------')
+        print('Не понимаю... Что ты написал?\n'
+              '--------(Use "help")--------')
 
     def print_rules(self):
-        print("Sorry, it's not working yet")
+        with open('rules.txt', 'r', encoding='utf-8') as rules:
+            for line in rules.readlines():
+                print(line)
+
+    def print_zen(self):
+        with open('zen.txt', 'r', encoding='utf-8') as zen:
+            for line in zen.readlines():
+                print(line)
 
     def print_map(self):
         print(self.board.get_map())
@@ -101,7 +109,7 @@ class GoEngine:
     def print_score(self):
         score = self.board.score(False)
         print(f'Black: {score[Colors.black]}\n'
-              f'White: {score[Colors.white] + self.board.komi}')
+              f'White: {score[Colors.white] + self.board.komi}\n')
 
     def demand_move(self):
         while True:
@@ -122,6 +130,8 @@ class GoEngine:
                     self.print_score()
                 elif player_response == 'rules':
                     self.print_rules()
+                elif player_response == 'zen':
+                    self.print_zen()
                 elif player_response == 'help':
                     self.print_help()
                 elif player_response == 'pass':
