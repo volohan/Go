@@ -6,7 +6,7 @@ from sys import exit
 from notation import GoNotation
 
 __author__ = 'Nikolai V.'
-__version__ = '0.4 Beta'
+__version__ = '1.0'
 
 
 class GoEngine:
@@ -22,7 +22,7 @@ class GoEngine:
             self.player_color = Colors.black
         else:
             self.player_color = player_color
-            self.opponent = GoOpponentAI(Colors(-player_color))
+            self.opponent = GoOpponentAI(self.board, Colors(-player_color))
 
         self.salutation()
 
@@ -42,7 +42,8 @@ class GoEngine:
             if self.next_move == self.player_color:
                 move = self.demand_move()
             else:
-                move = self.opponent.move()
+                move = self.opponent.get_move()
+                print(move)
 
             if move:
                 is_success = self.board.make_move(move[0], move[1],
@@ -100,7 +101,7 @@ class GoEngine:
               '----------------------------------------------------\n')
 
     def print_default(self):
-        print('Не понимаю... Что ты написал?\n'
+        print('Не понимаю...Что ты написал?\n'
               '--------(Use "help")--------')
 
     def print_rules(self):
@@ -155,5 +156,5 @@ class GoEngine:
 
 
 if __name__ == '__main__':
-    x = GoEngine(9, 6.5)
-    x.start(True)
+    x = GoEngine(4, 0)
+    x.start(False, Colors.white)
