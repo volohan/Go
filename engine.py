@@ -1,16 +1,19 @@
+from datetime import datetime
 from board import Goban
 from player_colors import Colors
 from opponent import GoOpponentAI
 from sys import exit
+from notation import GoNotation
 
 __author__ = 'Nikolai V.'
 __version__ = '0.4 Beta'
 
 
 class GoEngine:
-    def __init__(self):
-        self.board = Goban(9, 0.5)
+    def __init__(self, size, komi):
+        self.board = Goban(size, komi)
         self.is_end = True
+        self.notation = GoNotation()
         self.next_move = Colors.black
 
     def start(self, two_players, player_color=Colors.black):
@@ -25,6 +28,10 @@ class GoEngine:
 
         self.is_end = False
         self.player_pass = False
+
+        name = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.notation.create_new_notation(name, self.board.size,
+                                          self.board.komi)
         self.main_loop()
 
     def main_loop(self):
@@ -38,12 +45,14 @@ class GoEngine:
                 move = self.opponent.move()
 
             if move:
-                is_success = self.board.make_move(move[0], move[1], self.next_move)
+                is_success = self.board.make_move(move[0], move[1],
+                                                  self.next_move)
 
                 if not is_success:
                     self.illegal_move()
                     continue
 
+                self.notation.record_move(move[0], move[1], self.next_move)
                 self.player_pass = False
             else:
                 if self.player_pass:
@@ -80,10 +89,11 @@ class GoEngine:
 
     def print_help(self):
         print('----------------------------------------------------\n'
-              '"* *" (где * число 1-19) - координата поля по '
+              f'"* *" (где * число 1-{self.board.size}) - координата поля по '
               'горизонтали (с лева на право) и по вертикали (снизу '
               'вверх)\n\n'
               '"rules" - правила игры\n\n'
+              '"zen" - дзен игры\n\n'
               '"map" - показать доску игры\n\n'
               '"help" - этот текст\n\n'
               '"exit" - выход\n'
@@ -145,5 +155,5 @@ class GoEngine:
 
 
 if __name__ == '__main__':
-    x = GoEngine()
+    x = GoEngine(9, 6.5)
     x.start(True)

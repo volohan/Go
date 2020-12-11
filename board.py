@@ -233,16 +233,18 @@ class Goban:
     def get_map(self):
         res = ''
         for y in range(self.size):
-            res += str(self.size - y) + ' '
+            res += str(self.size - y).zfill(2) + ' '
             for x in range(self.size):
                 field = self.map[y][x]
+                res += ' '
                 if field:
                     res += field.image
                 else:
                     res += '+'
+                res += ' '
             res += '\n'
-        res += '  '
+        res += '   '
         for i in range(self.size):
-            res += str(i + 1)
+            res += str(i + 1).zfill(2) + ' '
         res += '\n'
         return res
