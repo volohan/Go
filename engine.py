@@ -126,7 +126,7 @@ class GoEngine:
         while True:
             try:
                 player_response = input()
-                print(' ')
+                print()
                 try:
                     coordinate = [int(i) for i in player_response.split(' ')]
                     if len(coordinate) == 2 \
@@ -156,5 +156,5 @@ class GoEngine:
 
 
 if __name__ == '__main__':
-    x = GoEngine(4, 0)
+    x = GoEngine(5, 0)
     x.start(False, Colors.white)

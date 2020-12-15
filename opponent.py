@@ -1,5 +1,4 @@
 import copy
-
 from player_colors import Colors
 
 

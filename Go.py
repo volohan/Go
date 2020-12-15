@@ -1,12 +1,13 @@
 import argparse
 from engine import GoEngine
 from player_colors import Colors
+from analyzer import Analyzer
 
 
 def path(path):
     try:
         with open(path, 'r', encoding='utf-8') as file:
-            return file.read()
+            return path
     except FileNotFoundError:
         print('Invalid file path')
         raise ValueError(path)
@@ -63,4 +64,4 @@ try:
     x = GoEngine(args.size, args.komi)
     x.start(not bool(args.opponent), args.opponent)
 except AttributeError:
-    print(args.path)
+    Analyzer(args.path)
